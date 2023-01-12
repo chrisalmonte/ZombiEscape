@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using System;
 using UnityEngine;
 using UnityEngine.AI;
 using ZombieScape.AI;
@@ -9,8 +8,6 @@ namespace ZombieScape
 {
     public class Test : MonoBehaviour
     {
-        public event Action<string, int> OnStateChange;
-
         [SerializeField] private Transform _targetTest;
         [SerializeField] private float _minDistance = 2.0f;
 
@@ -36,6 +33,10 @@ namespace ZombieScape
             _currenState = _aIStateArray[_stateIndex];
             _currenState.StartState();
         }
+        private void Update()
+        {
+            Debug.Log(_currenState.ToStateNameString());
+        }
 
         private void LateUpdate()
         {
@@ -44,7 +45,7 @@ namespace ZombieScape
             if (_currenState.CanChangeState())
             {
                 _stateIndex = _stateIndex.ToLoopArray(_aIStateArray.Length);
-                _currenState = _aIStateArray[_stateIndex];
+                _currenState= _aIStateArray[_stateIndex];
 
                 _currenState.StartState();
             }
@@ -52,18 +53,4 @@ namespace ZombieScape
 
 
     }
-    public class TestStateMachine<T> where T : IAIState
-    {
-        private T _state;
-        private Color _colorState;
-        private string _stateName;
-
-        public TestStateMachine(T state, Color colorState, string stateName)
-        {
-            _state = state;
-            _colorState = colorState;
-            _stateName = stateName;
-        }
-    }
 }
-

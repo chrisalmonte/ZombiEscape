@@ -9,7 +9,6 @@ namespace ZombieScape.AI
         void StartState();
         void Tick(float deltaTime);
         bool CanChangeState();
-
         string ToStateNameString();
     }
 }

@@ -7,8 +7,8 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] private CharacterController character;
     [SerializeField] private PlayerInput input;
-    [SerializeField] private float movementSpeed = 2.0f;
-    [SerializeField] private float rotationSpeed = 30.0f;
+    [SerializeField] private float walkingSpeed = 5.0f;
+    [SerializeField] private int rotationSpeed = 720;
 
     private Vector3 movementAxis;
     private Vector3 moveDirection;
@@ -40,7 +40,7 @@ public class PlayerController : MonoBehaviour
     {
         moveDirection = cameraTransform.TransformDirection(movementAxis);
         moveDirection.y = 0;
-        character.Move(moveDirection * movementSpeed * Time.deltaTime);
+        character.Move(moveDirection * walkingSpeed * Time.deltaTime);
     }
 
     private void Rotate()

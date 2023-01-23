@@ -1,5 +1,5 @@
 {
-    "name": "Character",
+    "name": "Player",
     "maps": [
         {
             "name": "Ground",
@@ -45,6 +45,15 @@
                     "name": "Dodge",
                     "type": "Button",
                     "id": "2e188a5b-d3a4-4b2e-86b8-1642dffd1dce",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Run",
+                    "type": "Button",
+                    "id": "c65705b2-5862-4ee2-8441-be2d409d92d8",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -148,6 +157,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Dodge",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "67e38042-0c5d-4bff-8ef7-66a53e1090b0",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Run",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

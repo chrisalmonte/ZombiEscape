@@ -1,35 +1,63 @@
 using UnityEngine;
+using System.Collections;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController), typeof(PlayerInput))]
 
 public class PlayerController : MonoBehaviour
 {
+    [Header("Object References")]
     [SerializeField] private CharacterController character;
     [SerializeField] private PlayerInput input;
-    [SerializeField] private float walkingSpeed = 5.0f;
-    [SerializeField] private float walkingSpeedAim = 3.5f;
-    [SerializeField] private float runningSpeed = 10.0f;
-    [SerializeField] private float dodgeDistanceWalk = 3.5f;
+
+    [Header("Walking Parameters")]
+    [SerializeField] private float speedWalk = 5.0f;
     [SerializeField] private float dodgeSpeed = 12.0f;
-    [SerializeField] private float dodgeDistanceAim = 2.0f;
-    [SerializeField] private float dodgeSpeedAim = 16.0f;
+    [SerializeField] private float dodgeDistanceWalk = 3.5f;
+
+    [Header("Runnning Parameters")]
+    [SerializeField] private float speedRun = 10.0f;
     [SerializeField] private float dodgeDistanceRun = 6.0f;
     [SerializeField] private float dodgeSpeedRun = 15.0f;
-    [SerializeField] private int rotationSpeed = 720; //How fast character turns around.
 
-    private Vector3 movementAxis;
-    private Vector3 moveDirection;
-    private Vector3 dodgeLandPoint;
-    private Vector3 dodgeDistance;
-    private Quaternion targetRotation;
-    private Transform cameraTransform;
+    [Header("Aiming Parameters")]
+    [SerializeField] private float speedAim = 3.5f;
+    [SerializeField] private float dodgeDistanceAim = 2.0f;
+    [SerializeField] private float dodgeSpeedAim = 16.0f;
+
+    [Header("Internal Parameters")]
+    [SerializeField] private int rotationAnimationSpeed = 720; //How fast character turns around. Does not directly affect gameplay
+
     private InputAction aim;
     private InputAction run;
+    private Transform cameraTransform;
+    private Vector3 movementAxis;
+    private Vector3 moveDirection;
+    private Quaternion targetRotation;
     private bool isAiming;
     private bool isRunning;
     private bool isDodging;
     private float speed;
+    private float dodgeMaxDistance;
+
+    public void OnMove(InputValue value) => movementAxis = new Vector3(value.Get<Vector2>().x, 0, value.Get<Vector2>().y);
+    public void OnDodge(InputValue value) => StartDodge();
+
+    private void OnEnable()
+    {
+        aim.performed += ctx => Aim();
+        aim.canceled += ctx => CancelAim();
+        run.performed += ctx => Run();
+        run.canceled += ctx => CancelRun();
+    }
+
+    private void OnDisable()
+    {
+        aim.performed -= ctx => Aim();
+        aim.canceled -= ctx => CancelAim();
+        run.performed -= ctx => Run();
+        run.canceled -= ctx => CancelRun();
+    }
 
     private void Awake()
     {
@@ -48,28 +76,17 @@ public class PlayerController : MonoBehaviour
     {
         Move();
         Rotate();
-    }
-
-    public void OnMove(InputValue value) => movementAxis = new Vector3(value.Get<Vector2>().x, 0, value.Get<Vector2>().y);
-    public void OnDodge(InputValue value) => Dodge();
+    }    
 
     private void Move()
-    { 
+    {
         if(!isDodging)
         {
             moveDirection = cameraTransform.TransformDirection(movementAxis);
-            moveDirection.y = 0;
-            character.Move(moveDirection * speed * Time.deltaTime);
+            moveDirection.y = 0;            
         }
-        
-        else
-        {
-            dodgeDistance = Vector3.MoveTowards(transform.position, dodgeLandPoint, speed * Time.deltaTime) - transform.position;
-            character.Move(dodgeDistance);
 
-            if (Vector3.Distance(transform.position, dodgeLandPoint) < 0.8f)
-                ExitDodge();
-        }
+        character.Move(moveDirection * speed * Time.deltaTime);
     }
 
     private void Rotate()
@@ -85,7 +102,7 @@ public class PlayerController : MonoBehaviour
             if (moveDirection != Vector3.zero)
                 targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
 
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationAnimationSpeed * Time.deltaTime);
         }
     }
 
@@ -102,9 +119,9 @@ public class PlayerController : MonoBehaviour
         else
         {
             if (isAiming)
-                speed = walkingSpeedAim;
+                speed = speedAim;
 
-            else speed = isRunning ? runningSpeed : walkingSpeed;
+            else speed = isRunning ? speedRun : speedWalk;
         }        
     }
 
@@ -142,31 +159,34 @@ public class PlayerController : MonoBehaviour
 
         isRunning = false;
         SetMovementSpeed();
-    }    
+    }
 
-    private void Dodge()
+    private void StartDodge()
     {
-        if (isDodging)
+        if (isDodging)  //  && !character.isGrounded when gravity is added.
             return;
-
-        //Implement if (character.isGrounded) when gravity is added.
-
-        isDodging = true;
-        SetMovementSpeed();
 
         if (movementAxis != Vector3.zero)
             moveDirection = cameraTransform.TransformDirection(movementAxis);
-
-        else 
+        else
             moveDirection = isAiming ? -transform.forward : transform.forward;
 
         moveDirection.y = 0;
 
-        //While animation and exit point are implemented, dodge will end when close to the point.
-        if(isAiming)
-            dodgeLandPoint = transform.position + (moveDirection * dodgeDistanceAim);
+        if (isAiming)
+            dodgeMaxDistance = dodgeDistanceAim;
         else
-        dodgeLandPoint = transform.position + (moveDirection * (isRunning ? dodgeDistanceRun : dodgeDistanceWalk));
+            dodgeMaxDistance = isRunning ? dodgeDistanceRun : dodgeDistanceWalk;
+
+        StartCoroutine(Dodge());           
+    }
+
+    private IEnumerator Dodge()
+    {
+        isDodging = true;
+        SetMovementSpeed();
+        yield return new WaitForSeconds(dodgeMaxDistance / speed);
+        ExitDodge();
     }
 
     public void ExitDodge()
@@ -176,21 +196,5 @@ public class PlayerController : MonoBehaviour
 
         isDodging = false;
         SetMovementSpeed();
-    }
-
-    private void OnEnable()
-    {
-        aim.performed += ctx => Aim();
-        aim.canceled += ctx => CancelAim();
-        run.performed += ctx => Run();
-        run.canceled += ctx => CancelRun();
-    }
-
-    private void OnDisable()
-    {
-        aim.performed -= ctx => Aim();
-        aim.canceled -= ctx => CancelAim();
-        run.performed -= ctx => Run();
-        run.canceled -= ctx => CancelRun();
-    }
+    }    
 }
